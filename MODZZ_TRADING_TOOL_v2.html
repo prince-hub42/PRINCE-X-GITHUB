@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MODZZ Trading Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap" rel="stylesheet"/>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background-color: #0a0a0a;
+        color: white;
+        font-family: 'Poppins', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        text-align: center;
+        padding: 20px;
+        flex-direction: column;
+    }
+    .container {
+        width: 100%;
+        max-width: 360px;
+        padding: 20px;
+        background: rgba(20, 20, 20, 0.9);
+        border-radius: 10px;
+        box-shadow: 0 0 15px red;
+    }
+    h1 {
+        font-size: 24px;
+        color: red;
+        text-shadow: 0 0 10px red, 0 0 20px red;
+    }
+    input, button {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+    input {
+        border: 2px solid red;
+        background: black;
+        color: white;
+        box-shadow: 0 0 10px red;
+        text-align: center;
+    }
+    button {
+        background: red;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.3s;
+        box-shadow: 0 0 10px red;
+    }
+    button:hover {
+        background: darkred;
+        box-shadow: 0 0 20px red;
+    }
+    .error {
+        color: red;
+        margin-top: 10px;
+        display: none;
+    }
+    .box {
+        display: inline-block;
+        padding: 8px 12px;
+        font-size: 18px;
+        margin: 5px;
+        border-radius: 5px;
+        border: 2px solid red;
+        text-shadow: 0 0 10px red;
+    }
+    .period-box { color: yellow; }
+    .big { color: lightblue; }
+    .small { color: orange; }
+    .number-box { color: green; }
+    .animated-profile {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 2px solid red;
+        animation: glowPulse 2s infinite;
+    }
+    @keyframes glowPulse {
+        0%, 100% { box-shadow: 0 0 10px red; transform: scale(1); }
+        50% { box-shadow: 0 0 20px red; transform: scale(1.05); }
+    }
+    .predict-btn {
+        background: white;
+        color: black;
+        font-weight: bold;
+        border-radius: 5px;
+        padding: 10px;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+    }
+    .predict-btn:hover {
+        background: lightgray;
+        transform: scale(1.05);
+    }
+    #live-result, #period-timer {
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    #loading-spinner {
+        display: none;
+        margin: 10px auto;
+        border: 4px solid red;
+        border-top: 4px solid transparent;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+</head>
+<body>
+<div class="container" id="login-box">
+    <h1>Enter Passcode</h1>
+    <img src="photo_6208367062091420844_x.jpg" alt="Profile" class="animated-profile" />
+    <input id="password" type="password" placeholder="Enter Key" />
+    <button onclick="checkLogin()">Unlock</button>
+    <p class="error" id="error-message">Wrong Key! Try Again.</p>
+</div>
+
+<div class="container" id="prediction-page" style="display: none;">
+    <h1>🔥 MODZZ HACK PANEL 🔥</h1>
+    <img src="photo_6208367062091420844_x.jpg" alt="Profile" class="animated-profile" />
+    <p id="result">PERIOD: <span class="box period-box">--</span></p>
+    <p id="signal">SIGNAL: <span class="box">--</span></p>
+    <p id="prediction">PREDICTED NUMBERS: <span class="box number-box">--/--</span></p>
+    <div id="loading-spinner"></div>
+    <p id="live-result">Waiting...</p>
+    <button class="predict-btn" onclick="fetchPrediction()">Predict</button>
+    <p id="period-timer" style="color:#00ff00;">⏳ Time Left: 60s</p>
+</div>
+
+<script>
+    function checkLogin() {
+        const pass = document.getElementById("password").value;
+        if (pass === "princepapa") {
+            document.getElementById("login-box").style.display = "none";
+            document.getElementById("prediction-page").style.display = "block";
+            fetchPrediction();
+        } else {
+            document.getElementById("error-message").style.display = "block";
+        }
+    }
+
+    const API_URL = 'https://api.bdg88zf.com/api/webapi/GetGameIssue';
+    const REQUEST_DATA = {
+        typeId: 1,
+        language: 0,
+        random: "e7fe6c090da2495ab8290dac551ef1ed",
+        signature: "1F390E2B2D8A55D693E57FD905AE73A7",
+        timestamp: 1723726679
+    };
+
+    let currentPeriod = null;
+    let timeLeft = 60;
+    let timerInterval;
+    const periodResults = {};
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        timeLeft = 60;
+        document.getElementById("period-timer").innerText = `⏳ Time Left: ${timeLeft}s`;
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById("period-timer").innerText = `⏳ Time Left: ${timeLeft}s`;
+            if (timeLeft <= 0) fetchPrediction();
+        }, 1000);
+    }
+
+    function fetchPrediction() {
+        document.getElementById("loading-spinner").style.display = "inline-block";
+        fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json;charset=UTF-8" },
+            body: JSON.stringify(REQUEST_DATA)
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("loading-spinner").style.display = "none";
+            if (data && data.data) {
+                const issueNumber = data.data.issueNumber || "Unknown";
+                if (issueNumber !== currentPeriod) {
+                    currentPeriod = issueNumber;
+                    resetTimer();
+                }
+                if (!periodResults[issueNumber]) {
+                    const num1 = Math.floor(Math.random() * 10);
+                    const num2 = (num1 + 3) % 10;
+                    const sumDigits = issueNumber.split('').reduce((a, b) => a + parseInt(b), 0);
+                    const bigSmall = sumDigits % 2 === 0 ? "Big" : "Small";
+                    periodResults[issueNumber] = { bigSmall, predictedNumbers: `${num1}/${num2}` };
+                }
+                const { bigSmall, predictedNumbers } = periodResults[issueNumber];
+                document.getElementById("result").innerHTML = `PERIOD: <span class="box period-box">${issueNumber}</span>`;
+                document.getElementById("signal").innerHTML = `SIGNAL: <span class="box ${bigSmall.toLowerCase()}">${bigSmall}</span>`;
+                document.getElementById("prediction").innerHTML = `PREDICTED NUMBERS: <span class="box number-box">${predictedNumbers}</span>`;
+                document.getElementById("live-result").innerText = "✅ LIVE DATA UPDATED!";
+            } else {
+                document.getElementById("live-result").innerText = "⚠️ ERROR!";
+            }
+        })
+        .catch(() => {
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("live-result").innerText = "⚠️ ERROR!";
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchPrediction();
+        setInterval(fetchPrediction, 10000);
+    });
+</script>
+</body>
+</html>
